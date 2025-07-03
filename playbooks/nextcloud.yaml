@@ -1,0 +1,83 @@
+---
+- name: Install Nextcloud
+  hosts: servers
+  become: yes
+
+  tasks:
+    - name: Update packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+
+    - name: Reset PHP module
+      command: dnf module reset php -y
+
+    - name: Enable PHP 8.1 module
+      command: dnf module enable php:8.1 -y
+
+    - name: Refresh dnf cache after module changes
+      dnf:
+        update_cache: yes
+
+    - name: Install dependencies
+      dnf:
+        name:
+          - httpd
+          - mariadb-server
+          - php
+          - php-bcmath
+          - php-curl
+          - php-gd
+          - php-intl
+          - php-json
+          - php-mbstring
+          - php-mysqlnd
+          - php-xml
+          - php-zip
+          - wget
+          - unzip
+        state: present
+
+    - name: Start MariaDB
+      systemd:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Start Apache Server
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Install Nextcloud
+      get_url:
+        url: https://download.nextcloud.com/server/releases/latest.zip
+        dest: /tmp/nextcloud.zip
+        mode: '0644'
+
+    - name: Unzip Nextcloud
+      unarchive:
+        src: /tmp/nextcloud.zip
+        dest: /var/www/html/
+        remote_src: yes
+        creates: /var/www/html/nextcloud
+
+    - name: Fix permissions
+      file:
+        path: /var/www/html/nextcloud
+        owner: apache
+        group: apache
+        recurse: yes
+
+    - name: Remove zip
+      file:
+        path: /tmp/nextcloud.zip
+        state: absent
+
+    - name: Restart Apache for load settings
+      systemd:
+        name: httpd
+        state: restarted
+
