@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ────────────────────────────────────────────────────────────
-# Initial settings
+# Initial Settings
 # ────────────────────────────────────────────────────────────
 USERS=("richard" "ansible")
 SSH_CONFIG="/etc/ssh/sshd_config"
@@ -18,7 +18,7 @@ log_info "Updating system..."
 dnf update -y
 
 # ────────────────────────────────────────────────────────────
-# User creation
+# User Creation
 # ────────────────────────────────────────────────────────────
 separator
 for USER in "${USERS[@]}"; do
@@ -43,6 +43,29 @@ sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' "$SSH_CONFIG"
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' "$SSH_CONFIG"
 sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' "$SSH_CONFIG"
 
+# ────────────────────────────────────────────────────────────
+# Wall Against Bots
+# ────────────────────────────────────────────────────────────
+separator
+log_info "Configuring Fail2Ban..."
+
+dnf install epel-release -y
+dnf install fail2ban -y
+systemctl enable --now fail2ban
+
+cat > /etc/fail2ban/jail.local <<EOF
+[DEFAULT]
+bantime = -1
+findtime = 10m
+maxretry = 1
+
+[sshd]
+enabled = true
+port = ssh
+logpath = %(sshd_log)s
+EOF
+
+systemctl restart fail2ban
 
 # ────────────────────────────────────────────────────────────
 # Finishing
