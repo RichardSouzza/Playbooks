@@ -19,3 +19,26 @@ chmod +x setup.sh
 ```sh
 ./setup.sh
 ```
+
+## About [K3s](https://github.com/k3s-io/k3s-ansible)
+
+Just adapt `inventory.yml` to connect via SSH:
+```yml
+k3s_cluster:
+  children:
+    server:
+      hosts:
+        almalinux:
+          ansible_host: <ip>
+          ansible_user: ansible
+          ansible_become: yes
+          ansible_become_method: sudo
+          ansible_become_user: root
+          ansible_ssh_private_key_file: ~/.ssh/id_ansible
+```
+
+And then:
+
+```sh
+ansible-playbook playbooks/site.yml -i inventory.yml --ask-become-pass
+```
